@@ -33,7 +33,6 @@ function applyPaletteReduction ()
                                     selectedColor = nil
                                     rgbInd = "r"..app.pixelColor.rgbaR(pixelValue).."g"..app.pixelColor.rgbaG(pixelValue).."b"..app.pixelColor.rgbaB(pixelValue)
                                     if uniqueColor[rgbInd] then
-                                        print("Saved time :D")
                                         selectedColor = uniqueColor[rgbInd]
                                     else
                                         currDelta = nil
