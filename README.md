@@ -1,5 +1,6 @@
 # Aseprite_Palette_Reducer
- Aseprite Plugin for Reducing the current color palette
+ This tool is designed to reduce/convert the current palette of the active sprite to a custom input palette. This is ideal for workflows that generate large palette sizes, or just for cleaning up existing artwork :)
+ It works by analyzing the pixels of the current project and converting them to one of the input colors. It will swap to the color of the custom palette closest to its own value (either RBG or LAB values).
 
 # How to use
 ## Getting Started
