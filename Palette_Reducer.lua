@@ -1,5 +1,6 @@
 numColors = 1
 colors = {}
+paletteColors = nil
 
 function updateColorPickerUI ()
     if dlg then dlg:close() end
@@ -13,7 +14,6 @@ function applyPaletteReduction ()
             local sprite = app.site.sprite
         
             if not sprite then
-                print("we got here")
                 print("No active sprite.")
                 return
             end
@@ -34,12 +34,7 @@ function applyPaletteReduction ()
                                     for i = 1, numColors do
                                         currColor = dlg.data["clr"..i]
                                         if currDelta == nil then 
-                                            if dlg.data["colorType"] == "LAB" then
-                                                currDelta = calcColorDeltaLAB(pixelValue, currColor)
-                                            else 
-                                                currDelta = calcColorDeltaRGB(pixelValue, currColor)
-                                            end
-
+                                            currDelta = calcColorDelta(pixelValue, currColor)
                                             selectedColor = currColor
                                         else
                                             compare = calcColorDelta(pixelValue, currColor)
@@ -71,17 +66,41 @@ end
 
 function getDialogue ()
     local dlg = Dialog { title = "Palette Reducer" }
-    for i=1, numColors do
-        dlg:color {
-            id = "clr"..i,
-            label = "Color "..i..":",
-            color = Color(0xffff7f00)
-        }
+    if paletteColors then
+        for i, value in ipairs(paletteColors) do
+            dlg:color {
+                id = "clr"..i,
+                label = "Color "..i..":",
+                color = value
+            }
+        end 
+    else
+        for i=1, numColors do
+            dlg:color {
+                id = "clr"..i,
+                label = "Color "..i..":",
+                color = Color(0xffff7f00)
+            }
+        end
     end
     
+    dlg:file {
+        id="paletteFile",
+        label="Import Palette",
+        title="Import Palette",
+        open=false,
+        save=false,
+        filename="palette.png",
+        filetypes=".png",
+        onchange = function ()
+            palette = Palette{ fromFile =dlg.data["paletteFile"] }
+            importPaletteColors(palette)
+        end
+    }
+
     dlg:combobox{ 
         id="colorType",
-        label="colorType",
+        label="Color Map Method",
         option="LAB",
         options={ "LAB", "RGB" }, 
     }
@@ -170,32 +189,45 @@ function RGBtoLab(rgb)
 end
 
 -- Function to calculate LAB delta
-function calcColorDeltaLAB(pixel, color)
-    -- Convert pixel color to RGB
-    local pixelColor = Color(
-        app.pixelColor.rgbaR(pixel),
-        app.pixelColor.rgbaG(pixel),
-        app.pixelColor.rgbaB(pixel)
-    )
+function calcColorDelta(pixel, color)
+    if(dlg.data["colorType"]) == "LAB" then
+        -- Convert pixel color to RGB
+        pixelColor = Color(
+            app.pixelColor.rgbaR(pixel),
+            app.pixelColor.rgbaG(pixel),
+            app.pixelColor.rgbaB(pixel)
+        )
 
-    local pixelL, pixelA, pixelB = RGBtoLab(pixelColor)
-    local targetL, targetA, targetB = RGBtoLab(color)
+        pixelL, pixelA, pixelB = RGBtoLab(pixelColor)
+        targetL, targetA, targetB = RGBtoLab(color)
 
-    local deltaL = math.abs(targetL - pixelL)
-    local deltaA = math.abs(targetA - pixelA)
-    local deltaB = math.abs(targetB - pixelB)
+        deltaL = math.abs(targetL - pixelL)
+        deltaA = math.abs(targetA - pixelA)
+        deltaB = math.abs(targetB - pixelB)
 
-    local totalDelta = math.sqrt(deltaL^2 + deltaA^2 + deltaB^2)
+        totalDelta = math.sqrt(deltaL^2 + deltaA^2 + deltaB^2)
+
+    else --RGB Calc
+        totalDelta = math.sqrt(math.abs(app.pixelColor.rgbaR(pixel) - color.red)^2
+        + math.abs(app.pixelColor.rgbaB(pixel) - color.blue)^2
+        + math.abs(app.pixelColor.rgbaG(pixel) - color.green)^2)
+    end
 
     return totalDelta
 end
 
-function calcColorDeltaRGB(pixel, color)
-    delta = math.abs(app.pixelColor.rgbaR(pixel) - color.red)
-    + math.abs(app.pixelColor.rgbaB(pixel) - color.blue)
-    + math.abs(app.pixelColor.rgbaG(pixel) - color.green)
-
-    return delta
+function importPaletteColors (palette)
+    numColors = 0
+    paletteColors = {}
+    for i=1, #palette-1 do
+        currColor = palette:getColor(i)
+        if currColor.alpha ~= 0 then
+            numColors = numColors + 1
+            paletteColors[i] = currColor
+        end
+    end
+    
+    updateColorPickerUI()
 end
 
 updateColorPickerUI()
