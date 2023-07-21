@@ -1,6 +1,7 @@
 numColors = 1
 colors = {}
 paletteColors = nil
+uniqueColor = {}
 
 function updateColorPickerUI ()
     if dlg then dlg:close() end
@@ -9,6 +10,7 @@ function updateColorPickerUI ()
 end
 
 function applyPaletteReduction ()
+    --time  = os.clock()
     app.transaction(
         function()
             local sprite = app.site.sprite
@@ -18,7 +20,6 @@ function applyPaletteReduction ()
                 return
             end
             
-        
             for _, frame in ipairs(sprite.frames) do
                 for _, layer in ipairs(sprite.layers) do
                     local cel = layer:cel(frame)
@@ -29,20 +30,27 @@ function applyPaletteReduction ()
                                 local pixelValue = it() -- get pixel
                                 
                                 if app.pixelColor.rgbaA(pixelValue) > 0 then
-                                    currDelta = nil
                                     selectedColor = nil
-                                    for i = 1, numColors do
-                                        currColor = dlg.data["clr"..i]
-                                        if currDelta == nil then 
-                                            currDelta = calcColorDelta(pixelValue, currColor)
-                                            selectedColor = currColor
-                                        else
-                                            compare = calcColorDelta(pixelValue, currColor)
-                                            if compare < currDelta then
-                                                currDelta = compare
+                                    rgbInd = "r"..app.pixelColor.rgbaR(pixelValue).."g"..app.pixelColor.rgbaG(pixelValue).."b"..app.pixelColor.rgbaB(pixelValue)
+                                    if uniqueColor[rgbInd] then
+                                        print("Saved time :D")
+                                        selectedColor = uniqueColor[rgbInd]
+                                    else
+                                        currDelta = nil
+                                        for i = 1, numColors do
+                                            currColor = dlg.data["clr"..i]
+                                            if currDelta == nil then 
+                                                currDelta = calcColorDelta(pixelValue, currColor)
                                                 selectedColor = currColor
+                                            else
+                                                compare = calcColorDelta(pixelValue, currColor)
+                                                if compare < currDelta then
+                                                    currDelta = compare
+                                                    selectedColor = currColor
+                                                end
                                             end
                                         end
+                                        uniqueColor[rgbInd] = selectedColor
                                     end
                                     if selectedColor ~= nil then
                                         selectedColor.alpha = app.pixelColor.rgbaA(pixelValue)
@@ -59,6 +67,7 @@ function applyPaletteReduction ()
         end
 
     )
+    --print("Elapsed time: " .. os.clock()-time)
     dlg:close()
 end
 
@@ -189,7 +198,7 @@ end
 -- Function to calculate LAB delta
 function calcColorDelta(pixel, color)
     if(dlg.data["colorType"]) == "LAB" then
-        -- Convert pixel color to RGB
+        -- Convert pixel color to LAB
         pixelColor = Color(
             app.pixelColor.rgbaR(pixel),
             app.pixelColor.rgbaG(pixel),
@@ -199,16 +208,16 @@ function calcColorDelta(pixel, color)
         pixelL, pixelA, pixelB = RGBtoLab(pixelColor)
         targetL, targetA, targetB = RGBtoLab(color)
 
-        deltaL = math.abs(targetL - pixelL)
-        deltaA = math.abs(targetA - pixelA)
-        deltaB = math.abs(targetB - pixelB)
+        deltaL = targetL - pixelL
+        deltaA = targetA - pixelA
+        deltaB = targetB - pixelB
 
         totalDelta = math.sqrt(deltaL^2 + deltaA^2 + deltaB^2)
 
     else --RGB Calc
-        totalDelta = math.sqrt(math.abs(app.pixelColor.rgbaR(pixel) - color.red)^2
-        + math.abs(app.pixelColor.rgbaB(pixel) - color.blue)^2
-        + math.abs(app.pixelColor.rgbaG(pixel) - color.green)^2)
+        totalDelta = math.sqrt((app.pixelColor.rgbaR(pixel) - color.red)^2
+        + (app.pixelColor.rgbaB(pixel) - color.blue)^2
+        + (app.pixelColor.rgbaG(pixel) - color.green)^2)
     end
 
     return totalDelta
