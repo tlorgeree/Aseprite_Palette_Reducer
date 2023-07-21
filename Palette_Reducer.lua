@@ -53,8 +53,6 @@ function applyPaletteReduction ()
                         else
                             print("Error: Image color mode is not RGB.")
                         end
-                    else
-                        print("Error: No cel found for frame " .. frame.frameNumber .. ", layer '" .. layer.name .. "'.")
                     end
                 end
             end
