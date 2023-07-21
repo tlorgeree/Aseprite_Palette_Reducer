@@ -29,7 +29,7 @@ function applyPaletteReduction ()
                             for it in image:pixels() do
                                 local pixelValue = it() -- get pixel
                                 
-                                if app.pixelColor.rgbaA(pixelValue) > 0 then
+                                if app.pixelColor.rgbaA(pixelValue) > 0 then --if not a blank pixel
                                     selectedColor = nil
                                     rgbInd = "r"..app.pixelColor.rgbaR(pixelValue).."g"..app.pixelColor.rgbaG(pixelValue).."b"..app.pixelColor.rgbaB(pixelValue)
                                     if uniqueColor[rgbInd] then
